@@ -489,7 +489,7 @@ class Migrate extends CI_Controller
 		//=================================================================================================
 		$title = "Dumping data for table `user`";
 		$query = "INSERT IGNORE INTO `user` (`id_user`,`nik`, `email`, `nama_lengkap`, `handphone`,`usia`,`asal_kampus`,`semester`,`password`,`password_hash`,`is_active`,`user_level`,`foto_ktp`) VALUES
-					(1,12345678912345, 'ikhlasul0507@gmail.com', 'Ikhlasul Amal', '082280524264',20,'Asal Kampus',2,'1234512345','QWEQW21312312','Y',1,'logo_peradi.jpg')
+					(1,12345678912345, 'ikhlasul0507@gmail.com', 'Ikhlasul Amal', '082280524264',20,'Asal Kampus',2,'amal','$2y$10$cwUGOkbukJIDxzCEyklSc.STsom9IFucTdK95.iPI6/fsW9A7WsFi','Y',1,'logo_peradi.jpg')
 					";
 		if ($this->db->query($query)) {
 			echo "||............[Migrate successfully " . $title . "]</br>";

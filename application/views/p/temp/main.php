@@ -50,40 +50,20 @@
                         <div class="p-4 mt-3 ">
                             <div class="text-center">
                                 <h4 class="h4 text-light">Management System</h4>
-                                <h6 class="h6 text-light">Peradi Nusantara</h6>
+                                <h6 class="h6 text-light">Peradi Pajak Nusantara</h6>
                             </div>
                             <hr style="height: 1px;color: white;background-color: white;">
                             <div class="form-group text-center">
-                                <?php if($this->session->userdata('is_digital_marketing') == 'N'){ ?>
-                                <a href="<?= base_url('P/Admin');?>" class="btn btn-danger btn-lg mt-3 ml-3">
+                                <a href="<?= base_url('P/Admin');?>" class="btn btn-warning text-dark btn-lg mt-3 ml-3">
                                     <i class="fa fa-home" aria-hidden="true" style="font-size:48px;"></i>
                                     <br>
                                     <small>System Info</small>
                                 </a>
-                                <a href="<?= base_url('P/Lms');?>" class="btn btn-danger btn-lg mt-3 ml-3">
-                                    <i class="fa fa-home" aria-hidden="true" style="font-size:48px;"></i>
-                                    <br>
-                                    <small>System LMS</small>
-                                </a>
-                                <a href="<?= base_url('P/Admin/report');?>" class="btn btn-danger btn-lg mt-3 ml-3">
+                                <a href="<?= base_url('P/Admin/report');?>" class="btn btn-warning text-dark btn-lg mt-3 ml-3">
                                     <i class="fa fa-book" aria-hidden="true" style="font-size:48px;"></i>
                                     <br>
                                     <small>Report Data</small>
                                 </a>
-                                <?php } ?>
-                                <?php if($lock != true){ ?>
-                                <a href="<?= base_url('P/Admin/call_center');?>" class="btn btn-danger btn-lg mt-3 ml-3">
-                                    <i class="fas fa-phone"style="font-size:48px;"></i>
-                                    <br>
-                                    <small>Call Center</small>
-                                </a>
-                                <?php if($this->session->userdata('user_level') <= 2){ ?>
-                                <a href="<?= base_url('P/Admin/wa_official');?>" class="btn btn-danger btn-lg mt-3 ml-3">
-                                    <i class="fab fa-whatsapp" aria-hidden="true" style="font-size:48px;"></i>
-                                    <br>
-                                    <small>WA Official</small>
-                                </a>
-                                <?php }} ?>
                             </div>
 
                         </div>

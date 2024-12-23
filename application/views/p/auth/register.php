@@ -29,7 +29,7 @@
     <script src="<?= base_url('assets/sweetalert/');?>js/sweetalert2.all.min.js"></script>
 </head>
 
-<body class="bg-gradient-primary">
+<body class="bg-gradient-warning">
 
     <div class="container">
 

@@ -30,7 +30,7 @@
     <script src='https://www.google.com/recaptcha/api.js'></script>
 </head>
 
-<body class="bg-gradient-primary">
+<body class="bg-gradient-warning">
 
     <div class="container">
 
