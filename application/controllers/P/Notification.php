@@ -34,6 +34,12 @@ class Notification extends CI_Controller {
 		$this->midtrans->config($params);
 		$this->load->helper('url');
     }
+	
+	public function output_json($data, $encode = true)
+	{
+		if($encode) $data = json_encode($data);
+		$this->output->set_content_type('application/json')->set_output($data);
+	}
 
 	public function index()
 	{
@@ -278,5 +284,30 @@ class Notification extends CI_Controller {
 	    return $choose_id_user; // Return selected user ID
 	}
 
+	public function registerUserFromAPI()
+	{
+		// Decode the raw POST data into an associative array
+		$postData = json_decode(file_get_contents('php://input'), true); // This will read the entire raw input
+		$result = [];
+		$totalData = 0;
+		$totalDataExsit = 0;
+		// Check if data exists
+		if ($postData && isset($postData['value'])) {
+			foreach ($postData['value'] as $userData) { // Assuming 'value' is an array of user data
+				$result = $this->M->add_to_db('user', $userData);
+				if ($result) {
+					$totalData++;
+				}
+			}
+
+			// Return success response with the total data
+			$result = ['totalDataExam' => $totalData,'totalDataExsit' => $totalDataExsit,'status_code' => 200];
+			$this->output_json($result);
+		} else {
+			// If no data is passed, return an error response
+			$result = ['totalDataExam' => 0, 'status_code' => 400,];
+			$this->output_json($result);
+		}
+	}
 
 }
