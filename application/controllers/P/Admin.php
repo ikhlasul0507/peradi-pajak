@@ -2228,7 +2228,7 @@ class Admin extends CI_Controller {
 				} else {
 					// Log or handle the case when agent_ids is empty or invalid
 					// Example: logging a warning message
-					log_message('warning', 'Invalid or empty agent_ids for account_uniq_id: ' . $value['account_uniq_id']);
+					// log_message('warning', 'Invalid or empty agent_ids for account_uniq_id: ' . $value['account_uniq_id']);
 				}
 			}
 			// echo "Status: success\n";
