@@ -24,6 +24,7 @@ class Admin extends CI_Controller {
 		$this->load->model('Mbg','M');
 		$this->load->model('Crud_model');
 		$this->load->library('service');
+		$this->load->library('notification_service');
 		$this->load->library('Pdf');
 		$this->load->library('ciqrcode');
 		$this->load->library('pagination'); 
@@ -68,6 +69,7 @@ class Admin extends CI_Controller {
 			$data['list_data'] = $this->M->getListHistoryCall(null,null,$this->session->userdata('id_user'));
 			$data['list_marketing'] = $this->M->getAllMarketing($this->session->userdata('id_user'));
 		}
+		$this->get_whatsapp_list_contact();
 		$this->load->view('p/callcenter/call_center', $data);
 	}
 	public function wa_official()
@@ -317,6 +319,70 @@ class Admin extends CI_Controller {
 		$data['status'] = $status;
 		$this->load->view('p/report/header',$data);
 		$this->load->view('p/report/report_payment_order', $data);
+		$this->load->view('p/temp/footer');
+	}
+
+	public function report_result_exam()
+	{
+		$url = $this->M->getParameter('@urlAPIExam');
+		$getDataAPI = $this->service->getDataAPI($url.'Api/getDataDatabaseJSON/list_all_answers');
+		$dataResult = [];
+		foreach ($getDataAPI as $key => $value) {
+			$dataFromDB = $this->M->get_report_process_exam(null,null,null, null, $value['id_user_master']);
+			if($dataFromDB){
+				$dataFromDB['score'] = $value['score'];
+				$dataFromDB['course_name'] = $value['course_name'];
+				array_push($dataResult, $dataFromDB);
+			}
+		}
+
+		$data['list_report'] = $dataResult;
+		$data['list_cart'] = $this->M->show_cart($this->session->userdata('id_user'));
+		$data['previous_url'] = $this->input->server('HTTP_REFERER');
+
+		$this->load->view('p/report/header',$data);
+		$this->load->view('p/report/report_result_exam', $data);
+		$this->load->view('p/temp/footer');
+	}
+
+	public function process_exam()
+	{
+		$id_master_kelas = trim($this->input->post('id_master_kelas'));
+		$datefrom = trim($this->input->post('datefrom'));
+		$datethru = trim($this->input->post('datethru'));
+		$nama_lengkap = trim($this->input->post('nama_lengkap'));
+		if($datefrom != "" || $datethru != "" || $nama_lengkap != "" || $id_master_kelas != ""){
+			$data['list_report'] = $this->M->get_report_process_exam($datefrom,$datethru,$nama_lengkap, $id_master_kelas);
+		}else{
+			$data['list_report'] = [];
+		}
+		$data['list_cart'] = $this->M->show_cart($this->session->userdata('id_user'));
+		$data['previous_url'] = $this->input->server('HTTP_REFERER');
+		$data['list_master_kelas'] = $this->M->getAllData('master_kelas');
+		$data['datefrom'] = $datefrom;
+		$data['datethru'] = $datethru;
+		$data['nama_lengkap'] = $nama_lengkap;
+		$data['id_master_kelas'] = $id_master_kelas;
+		$data['urlAPIExam'] = $this->M->getParameter('@urlAPIExam');
+		$this->load->view('p/report/header',$data);
+		$this->load->view('p/report/process_exam', $data);
+		$this->load->view('p/temp/footer');
+	}
+
+	public function process_peradi_pajak()
+	{
+		$nama_lengkap = trim($this->input->post('nama_lengkap'));
+		if($nama_lengkap != ""){
+			$data['list_report'] = $this->M->getAllMasterWhereOneConditionLIKE('user', 'nama_lengkap', $nama_lengkap);
+		}else{
+			$data['list_report'] = $this->M->getAllMasterWhereOneCondition('user', 'user_level', 4);
+		}
+		$data['list_cart'] = $this->M->show_cart($this->session->userdata('id_user'));
+		$data['previous_url'] = $this->input->server('HTTP_REFERER');
+		$data['nama_lengkap'] = $nama_lengkap;
+		$data['urlAPIExam'] = $this->M->getParameter('@urlAPIExam');
+		$this->load->view('p/report/header',$data);
+		$this->load->view('p/report/process_peradi_pajak', $data);
 		$this->load->view('p/temp/footer');
 	}
 	
@@ -883,11 +949,12 @@ class Admin extends CI_Controller {
 				if($this->M->getParameter('@sendNotifOrderClass') == 'Y'){
 					$data_send_notif = [
 						'handphone' => trim($this->session->userdata('handphone')),
+						'email' => trim($this->session->userdata('email')),
 						'namalengkap' => trim($this->session->userdata('nama_lengkap')),
 						'namaKelas' => trim($this->input->post('nama_kelas')),
 						'metodeBayar' => trim($this->input->post('metode_bayar')),
 					];
-					$this->service->send_whatsapp($data_send_notif, 'order_class');
+					$this->service->sendEmailWithText($data_send_notif, 'order_class','Orderan Berhasil');
 				}
 				$data = $this->session->set_flashdata('pesan', 'Kelas berhasil di pesan !');
 				redirect('P/Admin/myclass',$data);
@@ -902,7 +969,6 @@ class Admin extends CI_Controller {
 	public function process_order_product_list()
 	{
 		// $data = $this->M->getWhere('order_booking',['id_user'=>trim($this->input->post('id_user')),'id_master_kelas' =>trim($this->input->post('id_master_kelas')) ]);
-
 		$dataKelas = $this->M->get_name_kelas_list(trim($this->input->post('list_kelas')));
 		// if(!$data){
 			$data_db = [
@@ -919,19 +985,21 @@ class Admin extends CI_Controller {
 				if($this->M->getParameter('@sendNotifOrderClass') == 'Y'){
 					$data_send_notif = [
 						'handphone' => trim($this->session->userdata('handphone')),
+						'email' => trim($this->session->userdata('email')),
 						'namalengkap' => trim($this->session->userdata('nama_lengkap')),
 						'namaKelas' => trim($dataKelas['nama_kelas']),
 						'metodeBayar' => trim($this->input->post('metode_bayar')),
 					];
-					$sendUser = $this->service->send_whatsapp($data_send_notif, 'order_class');
+					$sendUser = $this->service->sendEmailWithText($data_send_notif, 'order_class', 'Orderan Kelas');
 					if($sendUser){
 						$data_send_notif_admin = [
 							'handphone' => trim($this->M->getParameter('@waAdminNotif')),
 							'namalengkap' => trim($this->session->userdata('nama_lengkap')),
+							'email' => trim($this->session->userdata('email')),
 							'namaKelas' => trim($dataKelas['nama_kelas']),
 							'metodeBayar' => trim($this->input->post('metode_bayar')),
 						];
-						$this->service->send_whatsapp($data_send_notif_admin, 'order_notif_admin');
+						$this->service->sendEmailWithText($data_send_notif_admin, 'order_notif_admin','Orderan Kelas');
 					}
 				}
 				$data = $this->session->set_flashdata('pesan', 'Kelas berhasil di pesan !');
@@ -1003,11 +1071,12 @@ class Admin extends CI_Controller {
 					if($this->M->getParameter('@sendNotifValidOrderClass') == 'Y'){
 						$data_send_notif = [
 							'handphone' => trim($user['handphone']),
+							'email' => trim($user['email']),
 							'namalengkap' => trim($user['nama_lengkap']),
 							'namaKelas' => trim($getListKelas['nama_kelas']),
 							'metodeBayar' => trim($data['metode_bayar']),
 						];
-						$this->service->send_whatsapp($data_send_notif, 'valid_order_class');
+						$this->service->sendEmailWithText($data_send_notif, 'valid_order_class', 'Orderan Di validasi');
 					}
 				}
 				$add_history = $this->M->add_log_history($this->session->userdata('nama_lengkap'),"Validasi Order ".$getListKelas['nama_kelas']." Berhasil Untuk = ".$user['nama_lengkap']);
@@ -1105,6 +1174,7 @@ class Admin extends CI_Controller {
 						$data_send_notif = [
 							'handphone' => trim($user['handphone']),
 							'namalengkap' => trim($user['nama_lengkap']),
+							'email' => trim($user['email']),
 							'namaKelas' => trim($getListKelas['nama_kelas']),
 							'metodeBayar' => trim($orderBook['metode_bayar']),
 							'nominal_payment' => number_format(trim($orderPayment['nominal_payment']), 2),
@@ -1112,9 +1182,9 @@ class Admin extends CI_Controller {
 							'url_virtual_account' => trim(base_url('P/Payment/virtual_account/'.$orderPayment['id_virtual_account']))
 						];
 						if(trim($this->input->post('sequence_payment')) == 1){
-							$this->service->send_whatsapp($data_send_notif, 'generate_payment');
+							$this->service->sendEmailWithText($data_send_notif, 'generate_payment','Generate Payment');
 						}else{
-							// $this->service->send_whatsapp($data_send_notif, 'generate_payment',trim($orderPayment['date_payment']));
+							// $this->service->sendEmailWithText($data_send_notif, 'generate_payment',trim($orderPayment['date_payment']));
 							// if(trim($this->input->post('sequence_payment')) > 1){
 							// 	//function generate jatuh tempo
 							// 	$this->generateNotifJatuhTempo($data_send_notif, trim($orderPayment['date_payment']));
@@ -1156,10 +1226,10 @@ class Admin extends CI_Controller {
 		$dateYesterday = [$yesterday1->format('Y-m-d'),$yesterday2->format('Y-m-d'),$yesterday3->format('Y-m-d')];
 		$dateTomorrow = [$tomorrow1->format('Y-m-d'),$tomorrow2->format('Y-m-d'),$tomorrow3->format('Y-m-d')];
 		foreach($dateYesterday as $dy){
-			$this->service->send_whatsapp($data, 'generate_payment_yesterday',trim($dy));
+			$this->service->sendEmailWithText($data, 'generate_payment_yesterday',trim($dy),'Jatuh Tempo');
 		}
 		foreach($dateTomorrow as $dt){
-			$this->service->send_whatsapp($data, 'generate_payment_tomorrow',trim($dt));
+			$this->service->sendEmailWithText($data, 'generate_payment_tomorrow',trim($dt),'Jatuh Tempo');
 		}
 	}
 
@@ -1335,11 +1405,12 @@ class Admin extends CI_Controller {
 
 				$data_send_notif = [
 					'handphone' => trim($user['handphone']),
+					'email' => trim($user['email']),
 					'namalengkap' => trim($user['nama_lengkap']),
 					'namaKelas' => trim($getListKelas['nama_kelas']),
 					'url_certificate' => trim(base_url('P/Payment/generateCertificate/'.$orderB['id_user'].'/'.trim($val)))
 				];
-				$sendWa = $this->service->send_whatsapp($data_send_notif, 'approve_certificate');
+				$sendWa = $this->service->sendEmailWithText($data_send_notif, 'approve_certificate','Sertifikat Pelatihan');
 				if($sendWa){
 					$check = true;
 				}
@@ -1382,6 +1453,116 @@ class Admin extends CI_Controller {
 		}
 	}
 
+	public function process_sync_data_exam()
+	{
+		$list_id_users = explode(",", $this->input->get('list_id_users'));
+		$id_kelas = $this->input->get('id_kelas')['id_kelas'];
+		$packageincludes = [
+			'tryout' => [
+				[
+					'id' => $id_kelas,
+					'expired_date' => 123123213
+				]
+			],
+			'bimbel' => []
+		];
+		$totalCustomer = 0;
+		$totalSertifikat = 0;
+		$check = false;
+		$dataSend = [];
+		foreach ($list_id_users as $val) {
+			$user = $this->M->getWhere('user',['id_user'=>trim($val)]);
+			if ($user) {
+				$dataUs = [
+					'id_user_master' => $user['id_user'],
+					'username' => $user['email'],
+					'password' => $user['password'],
+					'email' => $user['email'],
+					'created_on' => microtime(true),
+					'last_login' => 0,
+					'active' => 1,
+					'first_name' => "New",
+					'last_name' => "User",
+					'company' => "Public",
+					'phone' => $user['handphone'],
+					'list_packages' => json_encode($packageincludes)
+				];
+				array_push($dataSend, $dataUs);
+				$totalCustomer++;
+				$check = true;
+			}
+			
+		}
+		if($check){
+			$url = $this->M->getParameter('@urlAPIExam');
+			$dataJSONSEND = [
+				'status_code' => 200,
+				'totalCustomer' => $totalCustomer,
+				'value' => $dataSend
+			];
+			$sendData = $this->service->sendDataAPIPOST($url.'User/sendDataListNewUser', $dataJSONSEND);
+		}else{
+			echo json_encode(['status_code' => 400]);
+		}
+	}
+
+	public function process_sync_data_peradi_pajak()
+	{
+		$list_id_users = explode(",", $this->input->get('list_id_users'));
+		$totalCustomer = 0;
+		$check = false;
+		$dataSend = [];
+		$url = $this->M->getParameter('@urlAPIPeradiPajak');
+		
+		
+		foreach ($list_id_users as $val) {
+			$user = $this->M->getWhere('user', ['id_user' => trim($val)]);
+			$getOB = $this->M->getWhere('order_booking', ['id_user' => trim($val)]);
+			if ($user && !empty($user['foto_ktp']) && !$getOB) {
+				$data_register = [
+					'nama_lengkap' => trim($user['nama_lengkap']),
+					'nik' => trim($user['nik']),
+					'email' => trim($user['email']),
+					'handphone' => trim($user['handphone']),
+					'usia' => trim($user['usia']),
+					'asal_kampus' => trim($user['asal_kampus']),
+					'semester' => trim($user['semester']),
+					'reference' => trim($user['reference']),
+					'pic' => trim($user['pic']),
+					'angkatan' => '',
+					'latar_belakang' => trim($user['latar_belakang']),
+					'password' => trim($user['password']),
+					'password_hash' => trim($user['password_hash']),
+					'is_active' => trim($user['is_active']),
+					'user_level' => trim($user['user_level']),
+					'is_new_user' => trim($user['is_new_user']),
+					'id_user_master' => trim($user['id_user']),
+					'foto_ktp' => trim($user['foto_ktp']),
+				];
+
+				array_push($dataSend, $data_register);
+				$totalCustomer++;
+				$this->M->delete_to_db('user','id_user',trim($val));
+
+			}
+			$check = true;
+		}
+
+		// Return result
+		if ($check) {
+			$dataJSONSEND = [
+				'status_code' => 200,
+				'totalCustomer' => $totalCustomer,
+				'value' => $dataSend
+			];
+
+			$sendData = $this->service->sendDataAPIPOST($url.'P/Notification/registerUserFromAPI', $dataJSONSEND);
+		} else {
+			echo json_encode(['status_code' => 400,'result' => $dataSend]);
+		}
+	}
+
+
 	
 
 	public function process_add_master_user($level)
@@ -1414,9 +1595,10 @@ class Admin extends CI_Controller {
 					if($this->M->getParameter('@sendNotifWaRegister') == 'Y'){
 						$data_send_notif = [
 							'handphone' => trim($this->input->post('handphone')),
+							'email' => trim($this->input->post('email')),
 							'namalengkap' => trim($this->input->post('namalengkap'))
 						];
-						$this->service->send_whatsapp($data_send_notif, 'new_register');
+						$this->service->sendEmailWithText($data_send_notif, 'new_register','Registrasi Berhasil');
 					}
 				}
 				$data = $this->session->set_flashdata('pesan', 'Akun berhasil terdaftar !');
@@ -1821,6 +2003,7 @@ class Admin extends CI_Controller {
 
 										$data_send_notif = [
 											'handphone' => trim($user['handphone']),
+											'email' => trim($user['email']),
 											'namalengkap' => trim($user['nama_lengkap']),
 											'namaKelas' => trim($getListKelas['nama_kelas']),
 											'metodeBayar' => trim($orderBook['metode_bayar']),
@@ -1832,19 +2015,19 @@ class Admin extends CI_Controller {
 										$dateSendNotif = "";
 										if(trim(str_replace(' ', '', date('Y-m-d', strtotime($tanggal_bayar[$ip])))) < date('Y-m-d')){
 											$dateSendNotif = date('Y-m-d');
-											$this->service->send_whatsapp($data_send_notif, 'generate_payment');
+											$this->service->sendEmailWithText($data_send_notif, 'generate_payment','Generate Pembayaran');
 										}else{
 											$dateSendNotif = trim($orderPayment['date_payment']);
-											$this->service->send_whatsapp($data_send_notif, 'generate_payment',trim($orderPayment['date_payment']));
+											$this->service->sendEmailWithText($data_send_notif, 'generate_payment','Generate Pembayaran');
 											//function generate jatuh tempo
 											$this->generateNotifJatuhTempo($data_send_notif, trim($orderPayment['date_payment']));
 										}
 
 										// echo json_encode(['dateSend' => $dateSendNotif,'dataAgo' => trim(str_replace(' ', '', date('Y-m-d', strtotime($tanggal_bayar[$ip])))) ]);die;
 										// if(trim($this->input->post('sequence_payment')) == 1){
-										// 	$this->service->send_whatsapp($data_send_notif, 'generate_payment');
+										// 	$this->service->sendEmailWithText($data_send_notif, 'generate_payment');
 										// }else{
-										// 	$this->service->send_whatsapp($data_send_notif, 'generate_payment',trim($orderPayment['date_payment']));
+										// 	$this->service->sendEmailWithText($data_send_notif, 'generate_payment',trim($orderPayment['date_payment']));
 										// 	if(trim($this->input->post('sequence_payment')) > 1){
 										// 		//function generate jatuh tempo
 										// 		$this->generateNotifJatuhTempo($data_send_notif, trim($orderPayment['date_payment']));
@@ -1996,6 +2179,53 @@ class Admin extends CI_Controller {
     	}
     }
 
+	public function bukaKelas($angkatan, $id_master_kelas){
+		$data['list_data'] = $this->M->getAllDataMateriKelas($id_master_kelas, $angkatan);
+		$data['list_cart'] = $this->M->show_cart($this->session->userdata('id_user'));
+		$data['previous_url'] = $this->input->server('HTTP_REFERER');
+		$this->load->view('p/temp/header',$data);
+		$this->load->view('p/admin/list_master_materi', $data);
+		$this->load->view('p/temp/footer');
+	}
 
+	public function get_whatsapp_list_contact()
+	{
+		$date = new DateTime("now", new DateTimeZone("Asia/Jakarta"));
+		$formattedDate = $date->format('Y-m-d H:i:s');
+		$json = $this->notification_service->get_whatsapp_list_contact();
+		$response = json_decode($json, true);
+		// Check the status and count the elements in the "data" array
+		$totalData = 0;
+		if ($response['status'] === 'success') {
+			// Count the number of items in the "data" array
+			$dataCount = count($response['data']);
+			$dataArr = $response['data'];
+			foreach ($dataArr as $key => $value) {
+				$checkData = $this->M->getWhere('history_call_center',['customer_phone'=>trim($value['account_uniq_id'])]);
+				if($checkData){
+					continue;
+				}else{
+					$checkIDUser = $this->M->getWhere('token_wa',['token'=>trim($value['agent_ids'][0])]);
+					if($checkIDUser){
+						$send_db = [
+							'id_user' => $checkIDUser['id_user'],
+							'customer_name' => $value['name'],
+							'customer_phone' => $value['account_uniq_id'],
+							'notes_call' => "",
+							'last_call' => $formattedDate,
+							'status_call_center' => "N"
+						];
+						$this->M->add_to_db('history_call_center', $send_db);
+						$totalData++;
+					}
+				}
+			}
+			// echo "Status: success\n";
+			// echo "Number of items in data input history call: " . $totalData;  // Output: 0 (since the array is empty)
+		} else {
+			// echo "Status: failure\n";
+		}
+		// echo $channel_integrations;die;
+	}
 
 }

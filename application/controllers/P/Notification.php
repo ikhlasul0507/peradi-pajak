@@ -34,12 +34,6 @@ class Notification extends CI_Controller {
 		$this->midtrans->config($params);
 		$this->load->helper('url');
     }
-	
-	public function output_json($data, $encode = true)
-	{
-		if($encode) $data = json_encode($data);
-		$this->output->set_content_type('application/json')->set_output($data);
-	}
 
 	public function index()
 	{
@@ -149,6 +143,7 @@ class Notification extends CI_Controller {
 							$data_send_notif = [
 								'handphone' => trim($user['handphone']),
 								'namalengkap' => trim($user['nama_lengkap']),
+								'email' => trim($user['email']),
 								'namaKelas' => trim($getListKelas['nama_kelas']),
 								'metodeBayar' => trim($orderBook['metode_bayar']),
 								'nominal_payment' => number_format(trim($orderPayment['nominal_payment']),2),
@@ -156,7 +151,7 @@ class Notification extends CI_Controller {
 								'url_login' => trim(base_url('P/Admin')),
 								'link_wa'=> trim($url),
 							];
-							$this->service->send_whatsapp($data_send_notif, 'done_payment');
+							$this->service->sendEmailWithText($data_send_notif, 'done_payment','Pembayaran Berhasil');
 						}
 	    		}
 	    		$getCount = $this->M->get_count_order_payment_status($id_order);
@@ -164,11 +159,12 @@ class Notification extends CI_Controller {
 	    			if($this->M->getParameter('@sendNotifCompletePayment') == 'Y'){
 		    			$data_send_notif = [
 							'handphone' => trim($user['handphone']),
+							'email' => trim($user['email']),
 							'namalengkap' => trim($user['nama_lengkap']),
 							'namaKelas' => trim($namaKelas),
 							'url_invoice' => trim(base_url('P/Payment/createInvoice/'.$id_order))
 						];
-						$this->service->send_whatsapp($data_send_notif, 'complete_payment');
+						$this->service->sendEmailWithText($data_send_notif, 'complete_payment','Pembayaran Berhasil');
 					}
 	    			$this->M->update_to_db('order_booking',['status_order' => 'D'],'id_order_booking',$id_order);   
 	    		}
@@ -284,30 +280,5 @@ class Notification extends CI_Controller {
 	    return $choose_id_user; // Return selected user ID
 	}
 
-	public function registerUserFromAPI()
-	{
-		// Decode the raw POST data into an associative array
-		$postData = json_decode(file_get_contents('php://input'), true); // This will read the entire raw input
-		$result = [];
-		$totalData = 0;
-		$totalDataExsit = 0;
-		// Check if data exists
-		if ($postData && isset($postData['value'])) {
-			foreach ($postData['value'] as $userData) { // Assuming 'value' is an array of user data
-				$result = $this->M->add_to_db('user', $userData);
-				if ($result) {
-					$totalData++;
-				}
-			}
-
-			// Return success response with the total data
-			$result = ['totalDataExam' => $totalData,'totalDataExsit' => $totalDataExsit,'status_code' => 200];
-			$this->output_json($result);
-		} else {
-			// If no data is passed, return an error response
-			$result = ['totalDataExam' => 0, 'status_code' => 400,];
-			$this->output_json($result);
-		}
-	}
 
 }

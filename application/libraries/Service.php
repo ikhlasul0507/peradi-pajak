@@ -112,7 +112,7 @@ Selamat Datang, '.$name.',
 
 Silahkan  
 Lakukan Reset Password
-Akses link berikut : '.$url.'
+Akses link berikut : <a href="' .$url . '">Reset Password</a>
 
 Terima Kasih
 
@@ -369,7 +369,7 @@ Start : '.$start.'
 
 	public function do_upload($url, $filename) {
         $config['upload_path'] = './assets/p/'.$url;
-        $config['allowed_types'] = 'gif|jpg|jpeg|png';
+        $config['allowed_types'] = 'gif|jpg|jpeg|png|pdf|docx|pptx';
         $config['max_size'] = 10048; // 2MB
         $config['max_width'] = 10048;
         $config['max_height'] = 10048;
@@ -502,7 +502,7 @@ Start : '.$start.'
 
 	    $this->CI->email->attach($latestFile);
 
-	    // Send email and check status
+	    // Send email and check status 	
 	    if ($this->CI->email->send()) {
 	        echo 'Email sent successfully with attachment.';
 	    } else {
@@ -510,4 +510,134 @@ Start : '.$start.'
 	        echo $this->CI->email->print_debugger(['headers']);
 	    }
 	}
+
+	public function sendEmailWithText($params, $type, $subject) {
+		// Email configurations
+		$config['protocol'] = 'smtp';
+		$config['smtp_host'] = 'mail.peradinusantara.org';
+		$config['smtp_port'] = 587;
+		$config['smtp_user'] = 'noreply@peradinusantara.org';
+		$config['smtp_pass'] = 'OYtiet{.1$s0';
+		$config['mailtype'] = 'html'; // Set email type to HTML (can be 'text' for plain text)
+		$config['charset'] = 'utf-8';
+		// $config['wordwrap'] = TRUE;
+		// $config['newline'] = "\r\n"; // For compatibility
+	
+		// Initialize email library with config
+		$this->CI->email->initialize($config);
+	
+
+		// Set email content using variables
+		$this->CI->email->from('noreply@peradinusantara.org', 'Peradi Nusantara');
+		$this->CI->email->to($params['email']);  // Use the provided recipient email address
+		$this->CI->email->subject($subject); // Use the provided subject
+		$this->CI->email->message(nl2br($this->template_meesage($type, $params))); // Use the provided message
+	
+		// Send email and check status
+		if ($this->CI->email->send()) {
+			// echo 'Email sent successfully.';
+		} else {
+			// echo "Failed to send email. Error details:";
+			// echo $this->CI->email->print_debugger(['headers']);
+		}
+	}
+	
+
+	public function sendDataAPIPOST($url,$data)
+	{
+		// Convert the data to JSON
+		$json_data = json_encode($data);
+
+		// Initialize cURL session
+		$ch = curl_init($url);
+
+		// Set the cURL options
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); // Return response as a string
+		curl_setopt($ch, CURLOPT_POST, true); // Set the request method to POST
+		curl_setopt($ch, CURLOPT_POSTFIELDS, $json_data); // Attach the JSON data
+		curl_setopt($ch, CURLOPT_HTTPHEADER, [
+			'Content-Type: application/json', // Set content type to JSON
+			'Content-Length: ' . strlen($json_data) // Set the length of the data
+		]);
+
+		// Execute the cURL request and capture the response
+		$response = curl_exec($ch);
+
+		// Check for errors
+		if ($response === false) {
+			echo "cURL Error: " . curl_error($ch);
+		} else {
+			echo $response;
+		}
+
+		// Close the cURL session
+		curl_close($ch);
+	}
+
+	public function getDataAPI($url)
+	{
+		$ch = curl_init();
+
+		// Define the API endpoint
+		$api_url = $url;
+
+		// Set the cURL options
+		curl_setopt($ch, CURLOPT_URL, $api_url);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+		// Execute the request and store the response
+		$response = curl_exec($ch);
+
+		// Check if the request was successful
+		if ($response === FALSE) {
+			die('Error occurred while fetching data: ' . curl_error($ch));
+		}
+
+		// Decode the JSON response into a PHP array
+		$data = json_decode($response, true);
+
+		// Close the cURL session
+		curl_close($ch);
+
+		// Return the data instead of echoing it
+		return $data;
+	}
+
+	public function sendDataWithFileAPIPOST($url, $data_register, $filePath, $typeFile, $nameFile, $nameField)
+	{
+		// Add file to the data array
+		$file = new CURLFile($filePath, $typeFile, $nameFile);
+		$data_register[$nameField] = $file;
+
+		echo json_encode($data_register);die;
+		// Initialize cURL session
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, $url);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_POST, true);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, $data_register);
+
+		// Set headers
+		curl_setopt($ch, CURLOPT_HTTPHEADER, [
+			'Content-Type: application/json',
+		]);
+
+		// Execute cURL request
+		$response = curl_exec($ch);
+
+		// Check for errors
+		if ($response === false) {
+			echo "cURL Error: " . curl_error($ch);
+		} else {
+			// Decode response
+			$data = json_decode($response, true);
+		}
+
+		// Close cURL session
+		curl_close($ch);
+
+		return $data;
+	}
+
+
 }

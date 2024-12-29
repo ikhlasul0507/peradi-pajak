@@ -9,7 +9,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
     <link rel="icon" href="<?= base_url('assets/p/sistem/img/logo.png');?>" type="image/x-icon" />
-    <title>Peradi Pajak</title>
+    <title>Peradi Nusantara</title>
 
     <!-- Custom fonts for this template-->
     <link href="<?= base_url('assets/p/sistem/');?>vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
@@ -217,14 +217,14 @@
 
 
             <li class="nav-item <?=$report_peserta;?>">
-                <a class="nav-link" href="<?= base_url('P/Admin/report_peserta');?>">
+                <a class="nav-link" href="<?= base_url('P/Lms/add_master_materi');?>">
                     <i class="fas fa-fw fa-book"></i>
-                    <span>Detail  Peserta</span></a>
+                    <span>Tambah Materi</span></a>
             </li>
             <li class="nav-item <?=$report_kta_peserta;?>">
-                <a class="nav-link" href="<?= base_url('P/Admin/report_kta_peserta');?>">
+                <a class="nav-link" href="<?= base_url('P/Lms/list_master_materi');?>">
                     <i class="fas fa-fw fa-book"></i>
-                    <span>Detail  KTA Peserta</span></a>
+                    <span>Daftar Materi</span></a>
             </li>
             <!-- <li class="nav-item <?=$report_pembayaran;?>">
                 <a class="nav-link" href="<?= base_url('P/Payment/report_pembayaran');?>">
