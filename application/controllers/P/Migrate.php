@@ -392,15 +392,18 @@ class Migrate extends CI_Controller
 		//=================================================================================================
 		$title = "Table structure for table `materi_kelas`";
 		$query = "CREATE TABLE IF NOT EXISTS `materi_kelas` (
-					  `id_materi_kelas` int(11) NOT NULL AUTO_INCREMENT,
-					  `id_master_kelas` varchar(128) NOT NULL,
-					  `angkatan` int(11) NOT NULL,
-					  `sequence` int(11) NOT NULL,
-					  `dokument_materi`varchar(128) NOT NULL,
-					  `dokument_video`varchar(128) NOT NULL,
-					  `link_zoom`varchar(128) NOT NULL,
-					  `status_materi_kelas` char(1) NOT NULL,
-					   PRIMARY KEY (id_materi_kelas)
+					`id_materi_kelas` int(11) NOT NULL AUTO_INCREMENT,
+					`time_history` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+					`id_master_kelas` varchar(128) NOT NULL,
+					`angkatan` int(11) NOT NULL,
+					`sequence` int(11) NOT NULL,
+					`dokument_materi` varchar(128) NOT NULL,
+					`dokument_video` text,
+					`link_zoom` varchar(128) NOT NULL,
+					`status_materi_kelas` char(1) NOT NULL,
+					`date_field` DATE NOT NULL,               -- New date field
+					`waktu` TIME NOT NULL,                    -- New time field for hours and minutes
+					PRIMARY KEY (`id_materi_kelas`)
 					) ENGINE=InnoDB DEFAULT CHARSET=utf8";
 		if ($this->db->query($query)) {
 			echo "||............[Migrate successfully " . $title . "]</br>";
